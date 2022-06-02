@@ -1,6 +1,6 @@
 # JS8Spotter MIT License, Joe Lyman KF7MIX
 # You should have received a copy of the source and license with the program
-# Special thanks to KE0DHO, KF0HHR, and N0GES, for help in development
+# Special thanks to KE0DHO, KF0HHR, N0GES and N4FWD for help in development
 
 # Overview
 
@@ -167,9 +167,6 @@ KF7MIX via the information on QRZ.com with questions.
 
 # Additional modifications were made to accomodate the Linux folks
 
-"js8spotter" program is compiled for Linux. Make sure the execution permissions 
-have been set. Place the program somewhere in the PATH of your user (like ~/bin).
-The database file will be located in your home directory.
-To deinstall this program, simply delete the executable and the database file.
+Read the wiki pages on this repository for installation instructions 
 
  73, Tom N4FWD
