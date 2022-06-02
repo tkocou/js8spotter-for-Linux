@@ -1,6 +1,6 @@
 # JS8Spotter MIT License, Joe Lyman KF7MIX
 # You should have received a copy of the source and license with the program
-# Special thanks to KE0DHO, KF0HHR, N0GES and N4FWD for help in development
+# Special thanks to KE0DHO, KF0HHR, N0GES and Tom, N4FWD for help in development
 
 # Overview
 
