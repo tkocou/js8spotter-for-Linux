@@ -1228,7 +1228,7 @@ def main():
     try:
         sock.connect((settings['tcp_ip'], int(settings['tcp_port'])))
     except ConnectionRefusedError:
-        messagebox.showwarning('Connection Error','Is JS8Call running?')
+        messagebox.showwarning('Connection Error','Is JS8Call running? Check TCP port number in JS8Call.')
         sys.exit()
 
     app = App(sock)
