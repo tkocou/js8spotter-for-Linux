@@ -55,7 +55,7 @@ import linux_support as ls
 ### Globals
 swname = "JS8Spotter for Linux"
 fromtext = "de KF7MIX & N4FWD"
-swversion = "0.93b"
+swversion = "0.93b.1"
 
 base_dir = ""
 
@@ -206,10 +206,20 @@ class TCP_RX(Thread):
 class App(tk.Tk):
     def __init__(self, sock):
         super().__init__()
+        ### adding python check
+        if sys.version_info < (3,8):
+            messagebox.showwarning('Python version Error','Python version is not at the required 3.8 or higher')
+            sys.exit()
         self.sock = sock
         self.sender = None
         self.receiver = None
         self.protocol("WM_DELETE_WINDOW", self.menu_bye)
+        
+        ### used in network update function
+        self.tcpAddress = StringVar()
+        self.tcpPort = StringVar()
+        self.udpAddress = StringVar()
+        self.udpPort = StringVar()
 
         self.style = Style()
         self.call("source", "azure.tcl")
@@ -258,6 +268,9 @@ class App(tk.Tk):
         self.filemenu.add_command(label = 'New Profile', command = self.menu_new)
         self.filemenu.add_command(label = 'Edit Profile', command = self.menu_edit)
         self.filemenu.add_command(label = 'Remove Profile', command = self.menu_remove)
+        ### Added ability to update the network settings
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label = 'Network Settings', command = self.update_network)
         self.filemenu.add_separator()
         self.filemenu.add_command(label = 'Exit', command = self.menu_bye)
 
@@ -1042,7 +1055,127 @@ class App(tk.Tk):
             conn.commit()
             current_profile_id = 0
             self.build_profilemenu()
+            
+    def update_network(self):
+        self.top = Toplevel(self)
+        self.top.title("Network Settings")
+        self.top.geometry('800x300')
+        
+        ## force a re-read of the setting table
+        c.execute("SELECT * FROM setting")
+        dbsettings = c.fetchall()
+        settings = {}
+        for setting in dbsettings:
+            settings[setting[1]]=setting[2]
+            
+        ## Let's assign the TCP/UDP variables from the settings{}
+        dtRow = 0
+        label_col = 0
+        entry_col = 1
+        label2_col = 2
+        entry2_col = 3
+        label_padx = 8
+        
+        saveButton = Button(self.top, text="Update Configuration", command=lambda:self.saveData())
+        saveButton.grid(column=label_col,row=dtRow, sticky = "w")
+        saveButton.configure(bg="blue", fg="white")
+        
+        cancel_button = ttk.Button(self.top, text = "Cancel", command = self.top.destroy)
+        cancel_button.grid(row=dtRow, column = label2_col, padx=(20,20))
+        
+        blankRow = dtRow+1
+        blankLabel = Label(self.top)
+        blankLabel.config(text = '         ')
+        blankLabel.grid(column=label_col,row=blankRow, sticky="w")
+        
+        tcpRow = dtRow+2
+        tcp_addr_label = Label(self.top, text="TCP Address: ")
+        tcp_addr_label.grid(column=label_col, row=tcpRow, sticky="e", padx = label_padx)
+        
+        tcp_addr_entry = Entry(self.top, textvariable=self.tcpAddress)
+        tcp_addr_entry.grid(column=entry_col, row=tcpRow, sticky='w')
+        tcp_addr_entry.delete(0,END)
+        tcp_addr_entry.insert(0,settings["tcp_ip"])
+                
+        tcp_port_label = Label(self.top, text="TCP Port: ")
+        tcp_port_label.grid(column=label2_col, row=tcpRow, sticky="e", padx = label_padx)
+        
+        tcp_port_entry = Entry(self.top, textvariable=self.tcpPort)
+        tcp_port_entry.grid(column=entry2_col, row=tcpRow, sticky='w')
+        tcp_port_entry.delete(0,END)
+        tcp_port_entry.insert(0,settings["tcp_port"])
+        
+        blank2Row = dtRow+3
+        blank2Label = Label(self.top)
+        blank2Label.config(text = '         ')
+        blank2Label.grid(column=label_col,row=blank2Row, sticky="w")
+        
+        udpRow = dtRow+4
+        udp_addr_label = Label(self.top, text="UDP Address: ")
+        udp_addr_label.grid(column=label_col, row=udpRow, sticky="e", padx = label_padx)
+        
+        udp_addr_entry = Entry(self.top, textvariable=self.udpAddress)
+        udp_addr_entry.grid(column=entry_col, row=udpRow, sticky='w')
+        udp_addr_entry.delete(0,END)
+        udp_addr_entry.insert(0,settings["udp_ip"])
+        
+        udp_port_label = Label(self.top, text="UDP Port: ")
+        udp_port_label.grid(column=label2_col, row=udpRow, sticky="e", padx = label_padx)
+        
+        udp_port_entry = Entry(self.top, textvariable=self.udpPort)
+        udp_port_entry.grid(column=entry2_col, row=udpRow, sticky='w')
+        udp_port_entry.delete(0,END)
+        udp_port_entry.insert(0,settings["udp_port"])
 
+        self.top.grab_set()
+        self.top.bind('<Escape>', lambda x: self.top.destroy())
+
+    def saveData(self):
+        ## set up a new setting table which will be updated from the GUI values
+        c.execute("SELECT * FROM setting")
+        dbsettings = c.fetchall()
+        new_settings = {}
+        for setting in dbsettings:
+            new_settings[setting[1]]=setting[2]
+        
+        ## get settings from Entry widgets 
+        server_data_keys=['udp_ip','udp_port','tcp_ip','tcp_port']
+        for key in server_data_keys:
+            if key == 'udp_ip':
+                new_settings[key] = self.udpAddress.get()
+            elif key == 'udp_port':
+                new_settings[key] = self.udpPort.get()
+            elif key == 'tcp_ip':
+                new_settings[key] = self.tcpAddress.get()
+            elif key == 'tcp_port':
+                new_settings[key] = self.tcpPort.get()
+                
+        ## remove the old settings
+        c.execute("DELETE FROM setting;")
+        conn.commit()
+
+        ## build list in same order as SQL
+        ## dictionary matching does not guarentee proper order of values
+        value_list = []
+        for key in new_settings.keys():
+            if key == 'udp_ip':
+                value_list.append(new_settings[key])
+            elif key == 'udp_port':
+                value_list.append(new_settings[key])
+            elif key == 'tcp_ip':
+                value_list.append(new_settings[key])
+            elif key == 'tcp_port':
+                value_list.append(new_settings[key])
+            elif key == 'hide_heartbeat':
+                value_list.append(new_settings[key])
+            elif key == 'dark_theme':
+                value_list.append(new_settings[key])
+                
+        ## re-insert new settings
+        sql = "INSERT INTO setting(name,value) VALUES ('udp_ip',?),('udp_port',?),('tcp_ip',?),('tcp_port',?),('hide_heartbeat',?),('dark_theme',?)"
+        c.execute(sql,value_list)
+        conn.commit()
+        
 
     # About screen
     def about(self):
