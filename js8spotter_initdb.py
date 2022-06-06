@@ -101,7 +101,7 @@ def set_environment():
     if project_dir != "Projects":
         project_dir = "None"
     else:
-        project_dir += "/js8spotter"
+        project_dir += "/js8spotter-support-files"
     
     ### Home Directory (known location)
     homeDir = os.path.expanduser('~')
