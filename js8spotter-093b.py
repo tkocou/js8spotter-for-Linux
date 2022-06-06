@@ -55,7 +55,7 @@ import linux_support as ls
 ### Globals
 swname = "JS8Spotter for Linux"
 fromtext = "de KF7MIX & N4FWD"
-swversion = "0.93b.1"
+swversion = "0.93b.1.1"
 
 base_dir = ""
 tcp_conn = False
