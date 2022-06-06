@@ -58,8 +58,7 @@ fromtext = "de KF7MIX & N4FWD"
 swversion = "0.93b.1"
 
 base_dir = ""
-
-
+tcp_conn = False
 
 sysPlatform = platform.system()
 if sysPlatform == "Linux":
@@ -204,6 +203,7 @@ class TCP_RX(Thread):
 
 ### Main program thread
 class App(tk.Tk):
+    
     def __init__(self, sock):
         super().__init__()
         ### adding python check
@@ -214,12 +214,6 @@ class App(tk.Tk):
         self.sender = None
         self.receiver = None
         self.protocol("WM_DELETE_WINDOW", self.menu_bye)
-        
-        ### used in network update function
-        self.tcpAddress = StringVar()
-        self.tcpPort = StringVar()
-        self.udpAddress = StringVar()
-        self.udpPort = StringVar()
 
         self.style = Style()
         self.call("source", "azure.tcl")
@@ -231,8 +225,10 @@ class App(tk.Tk):
         self.refresh_keyword_tree()
         self.refresh_activity_tree()
 
-        self.start_receiving()
-        self.poll_activity()
+        ### we have a good tcp connection
+        if tcp_conn:
+            self.start_receiving()
+            self.poll_activity()
 
         self.eval('tk::PlaceWindow . center')
         self.update()
@@ -1067,6 +1063,8 @@ class App(tk.Tk):
         settings = {}
         for setting in dbsettings:
             settings[setting[1]]=setting[2]
+        
+        new_settings = settings.copy()
             
         ## Let's assign the TCP/UDP variables from the settings{}
         dtRow = 0
@@ -1076,7 +1074,7 @@ class App(tk.Tk):
         entry2_col = 3
         label_padx = 8
         
-        saveButton = Button(self.top, text="Update Configuration", command=lambda:self.saveData())
+        saveButton = Button(self.top, text="Update Configuration", command=lambda:self.saveData(new_settings))
         saveButton.grid(column=label_col,row=dtRow, sticky = "w")
         saveButton.configure(bg="blue", fg="white")
         
@@ -1092,18 +1090,20 @@ class App(tk.Tk):
         tcp_addr_label = Label(self.top, text="TCP Address: ")
         tcp_addr_label.grid(column=label_col, row=tcpRow, sticky="e", padx = label_padx)
         
-        tcp_addr_entry = Entry(self.top, textvariable=self.tcpAddress)
-        tcp_addr_entry.grid(column=entry_col, row=tcpRow, sticky='w')
-        tcp_addr_entry.delete(0,END)
-        tcp_addr_entry.insert(0,settings["tcp_ip"])
+        ### Because we are using a 'toplevel' window, we reference the widget
+        ### instead of a StringVar()
+        self.tcp_addr_entry = Entry(self.top)
+        self.tcp_addr_entry.grid(column=entry_col, row=tcpRow, sticky='w')
+        self.tcp_addr_entry.delete(0,END)
+        self.tcp_addr_entry.insert(0,settings["tcp_ip"])
                 
         tcp_port_label = Label(self.top, text="TCP Port: ")
         tcp_port_label.grid(column=label2_col, row=tcpRow, sticky="e", padx = label_padx)
-        
-        tcp_port_entry = Entry(self.top, textvariable=self.tcpPort)
-        tcp_port_entry.grid(column=entry2_col, row=tcpRow, sticky='w')
-        tcp_port_entry.delete(0,END)
-        tcp_port_entry.insert(0,settings["tcp_port"])
+
+        self.tcp_port_entry = Entry(self.top)
+        self.tcp_port_entry.grid(column=entry2_col, row=tcpRow, sticky='w')
+        self.tcp_port_entry.delete(0,END)
+        self.tcp_port_entry.insert(0,settings["tcp_port"])
         
         blank2Row = dtRow+3
         blank2Label = Label(self.top)
@@ -1113,43 +1113,38 @@ class App(tk.Tk):
         udpRow = dtRow+4
         udp_addr_label = Label(self.top, text="UDP Address: ")
         udp_addr_label.grid(column=label_col, row=udpRow, sticky="e", padx = label_padx)
-        
-        udp_addr_entry = Entry(self.top, textvariable=self.udpAddress)
-        udp_addr_entry.grid(column=entry_col, row=udpRow, sticky='w')
-        udp_addr_entry.delete(0,END)
-        udp_addr_entry.insert(0,settings["udp_ip"])
+
+        self.udp_addr_entry = Entry(self.top)
+        self.udp_addr_entry.grid(column=entry_col, row=udpRow, sticky='w')
+        self.udp_addr_entry.delete(0,END)
+        self.udp_addr_entry.insert(0,settings["udp_ip"])
         
         udp_port_label = Label(self.top, text="UDP Port: ")
         udp_port_label.grid(column=label2_col, row=udpRow, sticky="e", padx = label_padx)
-        
-        udp_port_entry = Entry(self.top, textvariable=self.udpPort)
-        udp_port_entry.grid(column=entry2_col, row=udpRow, sticky='w')
-        udp_port_entry.delete(0,END)
-        udp_port_entry.insert(0,settings["udp_port"])
+
+        self.udp_port_entry = Entry(self.top)
+        self.udp_port_entry.grid(column=entry2_col, row=udpRow, sticky='w')
+        self.udp_port_entry.delete(0,END)
+        self.udp_port_entry.insert(0,settings["udp_port"])
 
         self.top.grab_set()
         self.top.bind('<Escape>', lambda x: self.top.destroy())
 
-    def saveData(self):
-        ## set up a new setting table which will be updated from the GUI values
-        c.execute("SELECT * FROM setting")
-        dbsettings = c.fetchall()
-        new_settings = {}
-        for setting in dbsettings:
-            new_settings[setting[1]]=setting[2]
+    def saveData(self,new_settings):
         
-        ## get settings from Entry widgets 
+        ## get settings from Entry widgets, not StringVar()
         server_data_keys=['udp_ip','udp_port','tcp_ip','tcp_port']
         for key in server_data_keys:
             if key == 'udp_ip':
-                new_settings[key] = self.udpAddress.get()
+                new_settings[key] = self.udp_addr_entry.get()
             elif key == 'udp_port':
-                new_settings[key] = self.udpPort.get()
+                new_settings[key] = self.udp_port_entry.get()
             elif key == 'tcp_ip':
-                new_settings[key] = self.tcpAddress.get()
+                new_settings[key] = self.tcp_addr_entry.get()
             elif key == 'tcp_port':
-                new_settings[key] = self.tcpPort.get()
-                
+                new_settings[key] = self.tcp_port_entry.get()
+
+        
         ## remove the old settings
         c.execute("DELETE FROM setting;")
         conn.commit()
@@ -1170,7 +1165,7 @@ class App(tk.Tk):
                 value_list.append(new_settings[key])
             elif key == 'dark_theme':
                 value_list.append(new_settings[key])
-                
+
         ## re-insert new settings
         sql = "INSERT INTO setting(name,value) VALUES ('udp_ip',?),('udp_port',?),('tcp_ip',?),('tcp_port',?),('hide_heartbeat',?),('dark_theme',?)"
         c.execute(sql,value_list)
@@ -1219,18 +1214,31 @@ class App(tk.Tk):
     def menu_bye(self):
         # close the recv thread, database, and program
         conn.close()
-        self.stop_receiving()
+        if tcp_conn:
+            self.stop_receiving()
         self.destroy()
 
 
 def main():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((settings['tcp_ip'], int(settings['tcp_port'])))
-    except ConnectionRefusedError:
-        messagebox.showwarning('Connection Error','Is JS8Call running? Check TCP port number in JS8Call.')
+    ### adding python check
+    if sys.version_info < (3,8):
+        messagebox.showwarning('Python version Error','Python version is not at the required 3.8 or higher')
         sys.exit()
-
+    ### do we have a good connection to JS8Call
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print('settings: ',settings)
+        if settings['tcp_ip'] == '':
+            settings['tcp_ip'] = '127.0.0.1'
+            settings['tcp_port'] = '2442'
+        sock.connect((settings['tcp_ip'], int(settings['tcp_port'])))
+        tcp_conn = True
+    except ConnectionRefusedError:
+        rw = tk.Tk()
+        rw.overrideredirect(1)
+        rw.withdraw()
+        messagebox.showwarning('Connection Error','Is JS8Call running? Check TCP port number in JS8Call.')
+        rw.destroy()
     app = App(sock)
     app.mainloop()
 
