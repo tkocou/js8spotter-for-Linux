@@ -3,6 +3,7 @@
 
 # Change Log (latest first)
 
+2022-06-06    v0.93b.1.1 Fixed network configuration so JS8Call does not need to be running
 2022-06-06    v0.93b.1  Added network setting GUI - Tom N4FWD
 2022-06-02    v0.93b    Forked js8spotter - Linux modifications by Tom N4FWD
 2022-01-25    v0.93a    Fixed race condition in matching, and error handling,
