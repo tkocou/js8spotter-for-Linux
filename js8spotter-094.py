@@ -55,7 +55,7 @@ import linux_support as ls
 ### Globals
 swname = "JS8Spotter for Linux"
 fromtext = "de KF7MIX & N4FWD"
-swversion = "0.93b.1.1"
+swversion = "0.94"
 
 base_dir = ""
 tcp_conn = False
@@ -206,11 +206,14 @@ class App(tk.Tk):
     
     def __init__(self, sock):
         super().__init__()
-        ### adding python check
-        if sys.version_info < (3,8):
-            messagebox.showwarning('Python version Error','Python version is not at the required 3.8 or higher')
-            sys.exit()
-        self.sock = sock
+
+        ### Fix the TCP connectivity logic
+        if sock == None:
+            tcp_conn = False
+        else:
+            self.sock = sock
+            tcp_conn =  True
+            
         self.sender = None
         self.receiver = None
         self.protocol("WM_DELETE_WINDOW", self.menu_bye)
@@ -1222,7 +1225,11 @@ class App(tk.Tk):
 def main():
     ### adding python check
     if sys.version_info < (3,8):
+        rw = tk.Tk()
+        rw.overrideredirect(1)
+        rw.withdraw()
         messagebox.showwarning('Python version Error','Python version is not at the required 3.8 or higher')
+        rw.destroy()
         sys.exit()
     ### do we have a good connection to JS8Call
     try:
@@ -1232,13 +1239,14 @@ def main():
             settings['tcp_ip'] = '127.0.0.1'
             settings['tcp_port'] = '2442'
         sock.connect((settings['tcp_ip'], int(settings['tcp_port'])))
-        tcp_conn = True
     except ConnectionRefusedError:
         rw = tk.Tk()
         rw.overrideredirect(1)
         rw.withdraw()
         messagebox.showwarning('Connection Error','Is JS8Call running? Check TCP port number in JS8Call.')
         rw.destroy()
+        ### Tell App() that we don't have a connection to JS8Call
+        sock = None
     app = App(sock)
     app.mainloop()
 
