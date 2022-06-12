@@ -1234,7 +1234,6 @@ def main():
     ### do we have a good connection to JS8Call
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print('settings: ',settings)
         if settings['tcp_ip'] == '':
             settings['tcp_ip'] = '127.0.0.1'
             settings['tcp_port'] = '2442'
